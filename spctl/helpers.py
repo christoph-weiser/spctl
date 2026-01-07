@@ -172,14 +172,17 @@ def path_setup(filename, cwd,  identifier):
     a regression test. It works based on the predefined structure
     that is assumed when building up regession tests.
     This structure likes like this:
-
-    root/
-        |--tb_name.sch
-        |--tests/
-                |--tb_name.conf
-                |--results/
-                          |--
-                          |--
+    .
+    ├── tb_name.sch
+    └── tests
+        ├── tb_name.conf
+        └── results
+            └── tb_name_0000000000
+                ├── data
+                ├── netlists
+                │   ├── overview.txt
+                │   └── tb_name.spice
+                └── summary.csv
 
     """
     name = os.path.basename(filename).replace(".conf", "")
