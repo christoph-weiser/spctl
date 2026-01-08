@@ -24,8 +24,6 @@ import spctl
 
 from filelock import FileLock
 
-from logging.handlers import QueueHandler
-
 
 def create_cases(configfile):
     config = spctl.parse_configuration(configfile)
@@ -37,19 +35,11 @@ def create_cases(configfile):
     return cases_permut, casekeys
 
 
-def setup(configfile, xschemrcfile):
+def setup(configfile):
     cwd = os.getcwd()
     logtime = str(time.time()).split(".")[0]
 
     paths = spctl.path_setup(configfile, cwd, logtime)
-    paths["file_xschemrc"] = xschemrcfile
-    
-    f = spctl.create_netlist(paths["file_schematic"],
-                             paths["path_netlists"],
-                             paths["file_xschemrc"])
-
-    paths["file_netlist"] = f
-
     cases, casekeys = create_cases(paths["file_config"])
 
     with open(paths["file_overview"], "w") as ofile: 
@@ -61,7 +51,7 @@ def setup(configfile, xschemrcfile):
     return cases, paths
 
 
-def run_cases(lock, paths, args):
+def run_cases(paths, args, result_queue):
 
     logger = logging.getLogger()
     if not logger.handlers:
@@ -69,7 +59,7 @@ def run_cases(lock, paths, args):
     logger.setLevel(logging.INFO)
     
     logger.info("--------------------")
-    logger.info("Starting Test")
+    logger.info("Testcase")
     logger.info("--------------------")
     for par, val in zip(args[0], args[2]):
         logger.info("{:<14}: {}".format(par,val))
@@ -122,10 +112,9 @@ def run_cases(lock, paths, args):
     with open(paths["file_overview"], "a") as ofile: 
         ofile.write("{}\n".format(vals))
 
+
     output = spctl.run_simulation(file_case_netlist)
     res = spctl.extract_output_data(output)
 
-    with lock:
-        with open(paths["file_summary"], "a") as ofile:
-            for k in res:
-                ofile.write("{},{},{}\n".format(vals, k, res[k]))
+    result_queue.put((vals,res))
+    return (vals,res)
