@@ -94,5 +94,5 @@ def run_simulation(netlist):
         command, 
         capture_output=True, 
         text=True, 
-        check=True )
+        check=False )
     return result.stdout.splitlines()
