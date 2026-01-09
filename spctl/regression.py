@@ -117,4 +117,3 @@ def run_cases(paths, args, result_queue):
     res = spctl.extract_output_data(output)
 
     result_queue.put((vals,res))
-    return (vals,res)
