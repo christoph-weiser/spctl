@@ -73,7 +73,7 @@ def parse_configuration(filename):
             -20
             27
             85
-        :vdd(list, v)
+        :vdd(list, vsource)
             1,2,3
         :mypar(list, param)
             1
