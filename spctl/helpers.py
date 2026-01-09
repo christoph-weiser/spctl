@@ -196,6 +196,8 @@ def path_setup(filename, cwd,  identifier):
     path_net  = "{}/netlists".format(path_run)
     path_dat  = "{}/data".format(path_run)
     file_ovr  = "{}/overview.txt".format(path_net)
+    if not os.path.isdir(path_res):
+        os.mkdir(path_res)
     if not os.path.isdir(path_run):
         os.mkdir(path_run)
     if not os.path.isdir(path_net):
