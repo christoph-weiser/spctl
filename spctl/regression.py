@@ -51,7 +51,27 @@ def setup(configfile):
     return cases, paths
 
 
-def run_cases(paths, args, result_queue):
+def file_writer(queue, filename):
+    """
+    Listens for messages on the queue and writes them to a file.
+    Solely responsible for file I/O to avoid race conditions.
+    """
+    # Open with 'a' (append) and buffering=1 (line-buffered) for 2026 reliability
+    with open(filename, "a", encoding="utf-8", buffering=1) as f:
+        while True:
+            # This blocks until an item is available
+            result = queue.get()
+            # Check for the sentinel value to exit
+            if result == "exit":
+                break
+            vals = result[0]
+            res  = result[1]
+            for k in res:
+                f.write("{},{},{}\n".format(vals, k, res[k]))
+            f.flush() # Ensures data is saved even if the system crashes
+
+
+def run_cases(paths, args, result_queue, simulator):
 
     logger = logging.getLogger()
     if not logger.handlers:
@@ -64,27 +84,36 @@ def run_cases(paths, args, result_queue):
     for par, val in zip(args[0], args[2]):
         logger.info("{:<14}: {}".format(par,val))
 
-    # Load the circuit from file
-    cir = spctl.CircuitSection(paths["file_netlist"])
-    ctl = spctl.ControlSection(paths["file_netlist"])
 
+    # Get unqique id for netlist
     netlist_uuid = uuid.uuid4().hex
 
-    lines = ctl.lines
-    for i,line in enumerate(lines):
-        # TODO: this only applies to ngspice
-        if re.match("^wrdata", line):
-            s = line.split(" ")
-            s[1] = "{}/{}.csv".format(paths["path_data"], netlist_uuid)
-            line =  " ".join(s)
-            lines[i] = line
-    ctl.lines = lines
+    # Load the circuit from file
+    cir = spctl.CircuitSection(paths["file_netlist"])
 
+    if simulator == "ngspice":
+        ctl = spctl.ControlSection(paths["file_netlist"])
+        lines = ctl.lines
+        for i,line in enumerate(lines):
+            # TODO: this only applies to ngspice
+            if re.match("^wrdata", line):
+                s = line.split(" ")
+                s[1] = "{}/{}.csv".format(paths["path_data"], netlist_uuid)
+                line =  " ".join(s)
+                lines[i] = line
+        ctl.lines = lines
+    elif simulator == "xyce":
+        if "print" in cir.element_types():
+            for p in cir.prints:
+                if "file" in p.args:
+                    p.args["file"] = "{}/{}.csv".format(paths["path_data"], netlist_uuid)
+        
     include = ""
     for par, st, val in zip(args[0], args[1], args[2]):
         if par == "corner":
             include = ".include {}/{}.spice\n".format(paths["path_corners"], val)
         elif par == "temperature":
+            # TODO this ngspice specific
             uids = cir.filter("type", "temp")
             if len(uids) == 0:
                 cir.append(".temp {}".format(val))
@@ -100,20 +129,25 @@ def run_cases(paths, args, result_queue):
             for uid in uids:
                 cir[uid].value = val
 
-    netlist = "*Netlist \n" + include + cir.netlist + ctl.netlist
+    netlist = "*Netlist \n" + include + cir.netlist
+    if simulator == "ngspice":
+        netlist = netlist + ctl.netlist
 
-    corner_netlist = "{}.spice".format(netlist_uuid)
+    case_netlist = "{}.spice".format(netlist_uuid)
     vals = ",".join([netlist_uuid, *args[2]])   
 
-    file_case_netlist = "{}/{}".format(paths["path_netlists"], corner_netlist)
+    file_case_netlist = "{}/{}".format(paths["path_netlists"], case_netlist)
     with open(file_case_netlist, "w") as ofile: 
         ofile.write(netlist)
 
     with open(paths["file_overview"], "a") as ofile: 
         ofile.write("{}\n".format(vals))
 
-
-    output = spctl.run_simulation(file_case_netlist)
-    res = spctl.extract_output_data(output)
+    if simulator == "ngspice":
+        output = spctl.ngspice.run_simulation(file_case_netlist)
+        res = spctl.ngspice.extract_output_data(output)
+    elif simulator == "xyce":
+        output = spctl.xyce.run_simulation(file_case_netlist)
+        res = spctl.xyce.extract_output_data(output)
 
     result_queue.put((vals,res))
