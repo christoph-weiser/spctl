@@ -71,7 +71,7 @@ def file_writer(queue, filename):
             f.flush()
 
 
-def run_cases(paths, args, result_queue, simulator):
+def run_cases(args, result_queue, paths, simulator):
 
     logger = logging.getLogger()
     if not logger.handlers:
@@ -87,8 +87,8 @@ def run_cases(paths, args, result_queue, simulator):
     netlist_uuid = uuid.uuid4().hex
 
     if simulator == "ngspice":
-
-        cir = spctl.ngspice.CircuitSection(paths["file_netlist"])
+        logger.debug("Parsing ngspice specific netlist")
+        cir = spctl.ngspice.CircuitSection(paths["file_netlist"], syntax="ngspice")
         ctl = spctl.ngspice.ControlSection(paths["file_netlist"])
         lines = ctl.lines
         for i,line in enumerate(lines):
@@ -99,7 +99,8 @@ def run_cases(paths, args, result_queue, simulator):
                 lines[i] = line
         ctl.lines = lines
     elif simulator == "xyce":
-        cir = spctl.xyce.CircuitSection(paths["file_netlist"])
+        logger.debug("Parsing xyce specific netlist")
+        cir = spctl.xyce.CircuitSection(paths["file_netlist"], syntax="xyce")
         if "print" in cir.element_types():
             for p in cir.prints:
                 if "file" in p.args:
@@ -141,10 +142,13 @@ def run_cases(paths, args, result_queue, simulator):
         ofile.write("{}\n".format(vals))
 
     if simulator == "ngspice":
-        output = spctl.ngspice.run_simulation(file_case_netlist)
+        logger.debug("Starting ngspice simulation")
+        output, err = spctl.ngspice.run_simulation(file_case_netlist)
         res = spctl.ngspice.extract_output_data(output)
     elif simulator == "xyce":
-        output = spctl.xyce.run_simulation(file_case_netlist)
+        logger.debug("Starting xyce simulation")
+        output, err = spctl.xyce.run_simulation(file_case_netlist)
         res = spctl.xyce.extract_output_data(output)
-
+    for elem in err:
+        logger.debug(elem.lstrip())
     result_queue.put((vals,res))
