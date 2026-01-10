@@ -1,4 +1,4 @@
-# SPCTl - Spice Control
+# SPCTL - Spice Control
 # Copyright (C) 2026 Christoph Weiser
 #
 # This program is free software: you can redistribute it and/or modify
