@@ -111,12 +111,21 @@ def run_cases(args, result_queue, paths, simulator):
         if par == "corner":
             include = ".include {}/{}.spice\n".format(paths["path_corners"], val)
         elif par == "temperature":
-            # TODO this ngspice specific
-            uids = cir.filter("type", "temp")
-            if len(uids) == 0:
-                cir.append(".temp {}".format(val))
-            else:
-                cir[uids[0]].value = val
+            if simulator == "ngspice":
+                uids = cir.filter("type", "temp")
+                if len(uids) == 0:
+                    cir.append(".temp {}".format(val))
+                else:
+                    cir[uids[0]].value = val
+            elif simulator == "xyce":
+                tset = False
+                uids = cir.filter("type", "option")
+                for uid in uids:
+                    if (cir[uid].pkg == "device") and (cir[uid].name == "temp"):
+                        cir[uid].value = str(val)
+                        tset = True
+                if not tset:
+                    cir.append(".options device temp={}".format(val))
         else:
             if st == "param":
                 uids = cir.filter("type", st, uids)
@@ -150,5 +159,5 @@ def run_cases(args, result_queue, paths, simulator):
         output, err = spctl.xyce.run_simulation(file_case_netlist)
         res = spctl.xyce.extract_output_data(output)
     for elem in err:
-        logger.debug(elem.lstrip())
+        logger.info(elem.lstrip())
     result_queue.put((vals,res))
