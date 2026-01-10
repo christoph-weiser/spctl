@@ -184,4 +184,4 @@ def run_simulation(netlist):
         capture_output=True, 
         text=True, 
         check=False )
-    return result.stdout.splitlines()
+    return (result.stdout.splitlines(), result.stderr.splitlines())
