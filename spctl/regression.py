@@ -59,19 +59,16 @@ def file_writer(queue, filename):
     Listens for messages on the queue and writes them to a file.
     Solely responsible for file I/O to avoid race conditions.
     """
-    # Open with 'a' (append) and buffering=1 (line-buffered) for 2026 reliability
     with open(filename, "a", encoding="utf-8", buffering=1) as f:
         while True:
-            # This blocks until an item is available
             result = queue.get()
-            # Check for the sentinel value to exit
             if result == "exit":
                 break
             vals = result[0]
             res  = result[1]
             for k in res:
                 f.write("{},{},{}\n".format(vals, k, res[k]))
-            f.flush() # Ensures data is saved even if the system crashes
+            f.flush()
 
 
 def run_cases(paths, args, result_queue, simulator):
@@ -87,12 +84,7 @@ def run_cases(paths, args, result_queue, simulator):
     for par, val in zip(args[0], args[2]):
         logger.info("{:<14}: {}".format(par,val))
 
-
-    # Get unqique id for netlist
     netlist_uuid = uuid.uuid4().hex
-
-    # Load the circuit from file
-
 
     if simulator == "ngspice":
 
@@ -100,7 +92,6 @@ def run_cases(paths, args, result_queue, simulator):
         ctl = spctl.ngspice.ControlSection(paths["file_netlist"])
         lines = ctl.lines
         for i,line in enumerate(lines):
-            # TODO: this only applies to ngspice
             if re.match("^wrdata", line):
                 s = line.split(" ")
                 s[1] = "{}/{}.csv".format(paths["path_data"], netlist_uuid)
