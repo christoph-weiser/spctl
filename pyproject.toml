@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 keywords = ["spice", "analysis", "control"]
-dependencies = []
+dependencies = ["spatk"]
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
