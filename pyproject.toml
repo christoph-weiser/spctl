@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spctl"
-version = "1.0.0"
+version = "1.0.1"
 description = "Module for controling SPICE simulations"
 readme = "README.md"
 authors = [{ name = "Christoph Weiser"}]
