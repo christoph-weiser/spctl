@@ -17,6 +17,7 @@
 import re
 import os
 import subprocess
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -25,6 +26,9 @@ from multiprocessing import Pool, Manager
 from scipy.optimize import differential_evolution, shgo, dual_annealing, brute
 
 from spatk.helpers import replace_argument, read_netlist
+
+from spctl.ngspice import run_simulation as run_ngspice
+from spctl.xyce import run_simulation as run_xyce
 
 
 class Optimizer():
@@ -59,6 +63,14 @@ class Optimizer():
         self.df = pd.DataFrame()
         self.constraints = constraints
         self.bound_conditions = bound_conditions
+        self.simdir = "sim"
+        self.simulator = "ngspice"
+        if not os.path.isdir(self.simdir):
+            os.makedirs(self.simdir)
+        if self.simulator == "ngspice":
+            self.run_simulation = run_ngspice
+        elif syntax == "xyce":
+            self.run_simulation = run_xyce
 
 
     def opt_brute(self, cores=1, **kwargs):
@@ -241,7 +253,11 @@ class Optimizer():
         cost (float): result of costfunction evaluation.
         """
         netlist, params = self.precondition(x)
-        output = run_simulation(netlist)
+        name = uuid.uuid4().hex
+        netlist_file = "{}/{}.spice".format(self.simdir, name)
+        with open(netlist_file, "w") as ofile:
+            ofile.write(netlist)
+        output, err = self.run_simulation(netlist_file)
         result = self.handle_output(output)
         cost = self.costfunc(result, params)
         self.reslist.append((params, result, cost))
@@ -261,7 +277,7 @@ class Optimizer():
         result (dict): Result of simulation run.
         """
         netlist, params = self.precondition(x)
-        output = run_simulation(netlist)
+        output, err = self.run_simulation(netlist)
         return self.handle_output(output)
 
 
