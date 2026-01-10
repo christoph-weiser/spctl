@@ -24,9 +24,12 @@ import spctl
 
 from filelock import FileLock
 
+from spctl.helpers import path_setup
+from spctl.helpers import parse_configuration 
+
 
 def create_cases(configfile):
-    config = spctl.parse_configuration(configfile)
+    config = parse_configuration(configfile)
     cases = [config[x][1] for x in config]
     casekeys = tuple(config.keys())
     casetype = [x[0] for x in config.values()]
@@ -39,7 +42,7 @@ def setup(configfile):
     cwd = os.getcwd()
     logtime = str(time.time()).split(".")[0]
 
-    paths = spctl.path_setup(configfile, cwd, logtime)
+    paths = path_setup(configfile, cwd, logtime)
     cases, casekeys = create_cases(paths["file_config"])
 
     with open(paths["file_overview"], "w") as ofile: 
@@ -89,10 +92,12 @@ def run_cases(paths, args, result_queue, simulator):
     netlist_uuid = uuid.uuid4().hex
 
     # Load the circuit from file
-    cir = spctl.CircuitSection(paths["file_netlist"])
+
 
     if simulator == "ngspice":
-        ctl = spctl.ControlSection(paths["file_netlist"])
+
+        cir = spctl.ngspice.CircuitSection(paths["file_netlist"])
+        ctl = spctl.ngspice.ControlSection(paths["file_netlist"])
         lines = ctl.lines
         for i,line in enumerate(lines):
             # TODO: this only applies to ngspice
@@ -103,6 +108,7 @@ def run_cases(paths, args, result_queue, simulator):
                 lines[i] = line
         ctl.lines = lines
     elif simulator == "xyce":
+        cir = spctl.xyce.CircuitSection(paths["file_netlist"])
         if "print" in cir.element_types():
             for p in cir.prints:
                 if "file" in p.args:

@@ -14,19 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-try:
-    SIMULATOR = os.environ["SIMULATOR"]
-except(KeyError):
-    SIMULATOR = "ngspice"
-    
-from .optimize import *
-from .helpers import *
-from .regression import *
-
-if SIMULATOR == "ngspice":
-    from .ngspice  import *
-elif SIMULATOR == "xyce":
-    from .xyce import *
-else:
-    raise exception("simulator not recognized.")
+from . import helpers 
+from . import regression 
+from . import ngspice
+from . import xyce
+from . import optimize 
