@@ -73,21 +73,16 @@ def file_writer(queue, filename):
 
 def run_cases(args, result_queue, paths, simulator):
 
-    logger = logging.getLogger()
-    if not logger.handlers:
-        logger.addHandler(QueueHandler(log_queue))
-    logger.setLevel(logging.INFO)
-    
-    logger.info("--------------------")
-    logger.info("Testcase")
-    logger.info("--------------------")
+    logging.info("--------------------")
+    logging.info("Testcase")
+    logging.info("--------------------")
     for par, val in zip(args[0], args[2]):
-        logger.info("{:<14}: {}".format(par,val))
+        logging.info("{:<14}: {}".format(par,val))
 
     netlist_uuid = uuid.uuid4().hex
 
     if simulator == "ngspice":
-        logger.debug("Parsing ngspice specific netlist")
+        logging.debug("Parsing ngspice specific netlist")
         cir = spctl.ngspice.CircuitSection(paths["file_netlist"], syntax="ngspice")
         ctl = spctl.ngspice.ControlSection(paths["file_netlist"])
         lines = ctl.lines
@@ -99,7 +94,7 @@ def run_cases(args, result_queue, paths, simulator):
                 lines[i] = line
         ctl.lines = lines
     elif simulator == "xyce":
-        logger.debug("Parsing xyce specific netlist")
+        logging.debug("Parsing xyce specific netlist")
         cir = spctl.xyce.CircuitSection(paths["file_netlist"], syntax="xyce")
         if "print" in cir.element_types():
             for p in cir.prints:
@@ -151,13 +146,13 @@ def run_cases(args, result_queue, paths, simulator):
         ofile.write("{}\n".format(vals))
 
     if simulator == "ngspice":
-        logger.debug("Starting ngspice simulation")
+        logging.debug("Starting ngspice simulation")
         output, err = spctl.ngspice.run_simulation(file_case_netlist)
         res = spctl.ngspice.extract_output_data(output)
     elif simulator == "xyce":
-        logger.debug("Starting xyce simulation")
+        logging.debug("Starting xyce simulation")
         output, err = spctl.xyce.run_simulation(file_case_netlist)
         res = spctl.xyce.extract_output_data(output)
     for elem in err:
-        logger.info(elem.lstrip())
+        logging.warning(elem.lstrip())
     result_queue.put((vals,res))
