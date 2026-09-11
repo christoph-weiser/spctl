@@ -215,6 +215,45 @@ def path_setup(filename, cwd,  identifier):
             }
 
 
+def get_testresult(filename, n=0, folder=False, numbered_only=True):
+    """ Return test result 
+
+    Required inputs:
+    ----------------
+    filename (str): name of the result oftentimes __file__
+
+
+    Optional inputs:
+    ----------------
+    n:              result number from ordered list. 
+                    0: latest, 1: second to latest...
+    folder:         return only the folder path.
+                    otherwise path points to summary.csv
+    numbered_only:  only include folders that follow the naming
+                    convention of filename_timestamp format.
+
+    Returns
+    ----------------
+    latest (str):       path to the latest result.
+
+    """
+    filename = os.path.basename(filename).replace(".py", "")
+    path_results = os.path.abspath("{}/../results".format(os.getcwd()))
+    results = list()
+    for elem in os.listdir(path_results):
+        if numbered_only: 
+            if re.match(r"^{}_\d*$".format(filename), elem):
+                results.append(elem)
+        else:
+            if filename in elem:
+                results.append(elem)
+    results = sorted(results, reverse=True)
+    if folder: 
+        return "{}{}{}".format(path_results, os.sep, results[n])
+    else:
+        return "{}{}{}{}summary.csv".format(path_results, os.sep, results[n], os.sep)
+
+
 def latest_testresult(filename, location):
     """ Return the latest testresult
 
