@@ -154,5 +154,5 @@ def run_cases(args, result_queue, paths, simulator):
         output, err = spctl.xyce.run_simulation(file_case_netlist)
         res = spctl.xyce.extract_output_data(output)
     for elem in err:
-        logging.warning(elem.lstrip())
+        logging.info(elem.lstrip())
     result_queue.put((vals,res))
