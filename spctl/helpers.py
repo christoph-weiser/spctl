@@ -189,7 +189,7 @@ def path_setup(filename, cwd,  identifier):
     name_sch  = name + ".sch"
     name_conf = name + ".conf"
     file_sch  = os.path.dirname(cwd) + "/" + name_sch
-    file_conf = cwd + "/" + name_conf
+    file_conf = filename
     path_res  = cwd + "/" + "results"
     path_run  = "{}/{}_{}".format(path_res, name, identifier)
     file_sum  = "{}/summary.csv".format(path_run)
