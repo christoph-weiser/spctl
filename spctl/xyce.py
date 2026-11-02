@@ -17,6 +17,7 @@
 import re
 import subprocess
 import spatk
+import logging
 
 
 class CircuitSection(spatk.Circuit):
@@ -70,10 +71,21 @@ def extract_output_data(output):
     results = {}
     for line in output:
         if re.match(r"^\*.*", line) == None:
-            if re.match(r".* = .*", line):
+            if re.match(r".* = .* = .*", line):
+                logging.info(line)
+                var = line.split("=")[0].strip()
+                val = (line.split("=")[1].lstrip()).split(" ")[0]
+                if val == "FAILED":
+                    results[var] = float("NaN")
+                else:
+                    results[var] = float(val)
+            elif re.match(r".* = .*", line):
                 var = line.split("=")[0].strip()
                 val = line.split("=")[-1].strip()
-                results[var] = float(val)
+                if val == "FAILED":
+                    results[var] = float("NaN")
+                else:
+                    results[var] = float(val)
     return results
 
 
